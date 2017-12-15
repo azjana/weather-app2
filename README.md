@@ -7,6 +7,9 @@
 ``` bash
 # install dependencies
 npm install
+npm install vue-resource
+npm install --save-dev babel-preset-stage-2
+npm install vuex --save
 
 # serve with hot reload at localhost:8080
 npm run dev
