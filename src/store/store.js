@@ -7,10 +7,12 @@ export const store = new Vuex.Store({
   state: {
     city: '',
     days: [],
+    cityChosen: false,
     showDetails: false,
     detailsDay: {},
     showDetailsHour: false,
     detailsHour: {},
+    loading: false,
     cities: [
       {
         'name': 'Warszawa',
@@ -21,19 +23,19 @@ export const store = new Vuex.Store({
         'id': 2950159
       },
       {
-        'name': 'Distrito de Faro',
+        'name': 'Faro',
         'id': 2268337
       },
       {
-        'name': 'Paris',
+        'name': 'Paryż',
         'id': 2988507
       },
       {
-        'name': 'London',
+        'name': 'Londyn',
         'id': 2643743
       },
       {
-        'name': 'Bucureştii Noi',
+        'name': 'Bukareszt',
         'id': 683503
       },
       {
@@ -63,16 +65,22 @@ export const store = new Vuex.Store({
     },
     cities: state => {
       return state.cities
+    },
+    getCityChosen: state => {
+      return state.cityChosen
+    },
+    getLoading: state => {
+      return state.loading
     }
   },
   mutations: {
     setDayData: (state, payload) => {
       var dayData = payload
-      if (payload.name !== 'dzisiaj') {
-        dayData.nightTemp = payload.hourData.find(o => o.hour === '06:00:00').temp
-        dayData.dayTemp = payload.hourData.find(o => o.hour === '12:00:00').temp
-        dayData.temp = dayData.nightTemp + '/' + dayData.dayTemp
-        dayData.icon = payload.hourData.find(o => o.hour === '15:00:00').icon
+      if (payload.name !== 'Dzisiaj') {
+        dayData.nightTemp = payload.hourData.find(o => o.hour === '06:00').temp
+        dayData.dayTemp = payload.hourData.find(o => o.hour === '12:00').temp
+        dayData.temp = dayData.nightTemp + ' / ' + dayData.dayTemp
+        dayData.icon = payload.hourData.find(o => o.hour === '15:00').icon
       } else {
         dayData.icon = payload.hourData[0].icon
         dayData.temp = payload.hourData[0].temp
@@ -82,9 +90,9 @@ export const store = new Vuex.Store({
     setDetails: (state, payload) => {
       if (state.showDetailsHour) {
         state.showDetailsHour = false
-      }
-      state.showDetails = true
+      }      
       state.detailsDay = payload
+      state.showDetails = true
     },
     removeOldState: (state) => {
       if (state.showDetails) {
@@ -101,33 +109,51 @@ export const store = new Vuex.Store({
     },
     setCity: (state, payload) => {
       state.city = payload
+    },
+    setCityChosen: (state) => {
+      state.cityChosen = !state.cityChosen
+    },
+    setLoading: (state) => {
+      state.loading = !state.loading
     }
   },
   actions: {
     setData: ({commit}, payload) => {
       var dayData = {}
-
-      commit('setCity', payload.city.name)
-
+      let today = new Date()
+      const daysNames = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota']
+      const alternativeDays = ['Dzisiaj', 'Jutro']
       payload.list.forEach((e, index) => {
         var date = e.dt_txt.split(' ')
+        let dataDay = date[0].substr(-2)
+        let dataDifference = dataDay - today.getDate()
+        let indexDay = today.getDay() + dataDifference
+
         if (date[0] !== dayData.date) {
           if (dayData.date) {
             commit('setDayData', dayData)
           }
+
+          if (indexDay > 6) {
+            indexDay = indexDay - 7
+          }
+
           dayData = {
             date: date[0],
             hourData: [],
-            name: index === 0 ? 'dzisiaj' : ''
+            name: dataDifference <= 1 ? alternativeDays[dataDifference] : daysNames[indexDay]
           }
         }
+
+        date[1] = date[1].substring(0, 5)
 
         dayData.hourData.push({
           hour: date[1],
           temp: Math.round(e.main.temp - 273.15),
           icon: 'http://openweathermap.org/img/w/' + e.weather[0].icon + '.png',
-          wind: e.wind.speed,
-          rain: e.rain ? Math.round(e.rain['3h']*100)/100 || '0' : '0'
+          wind: e.wind.speed.toFixed(2),
+          rain: e.rain ? e.rain['3h'] || '0' : '0',
+          snow: e.snow ? e.snow['3h'] || '0' : '0'
         })
       })
     }

@@ -9,7 +9,7 @@ export default {
         return JSON.parse(response.bodyText)
       },
         response => {
-          console.log('error', response)
+          return 'error'
         })
       return response
     },
